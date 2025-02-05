@@ -3,6 +3,14 @@ package edu.jsu.mcis.cs310;
 import com.github.cliftonlabs.json_simple.*;
 import com.opencsv.*;
 
+// New Imports Jordan added
+import java.io.StringReader;
+import java.util.List;
+import java.util.Iterator;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.io.StringWriter;
+
 public class Converter {
     
     /*
@@ -77,9 +85,53 @@ public class Converter {
         String result = "{}"; // default return value; replace later!
         
         try {
-        
             // INSERT YOUR CODE HERE
+            // create a jsonObject to hold records
+            JsonObject records = new JsonObject();
+            // create the necessary data structures to hold the values for the records
+            ArrayList<String> prodNums = new ArrayList<>();
+            ArrayList<String> headings = new ArrayList<>();
+            ArrayList<Object[]> data = new ArrayList<>();
+            // create a reader and iterator so we can split the information appropriately
+            CSVReader csvReader = new CSVReader(new StringReader(csvString));
+            List<String[]> full = csvReader.readAll();
+            Iterator<String[]> iterator = full.iterator();
+            // appropriately split the information from the input data
+            if(iterator.hasNext()){
+                // place first line into headings
+                String[] line = iterator.next();
+                for(String s : line){
+                    headings.add(s);
+                }
+                // while there are more lines, place the prodNums into prodNums and the 
+                // remaining data into data
+                while(iterator.hasNext()){
+                    ArrayList<Object> temp = new ArrayList<>();
+                    line = iterator.next();
+                    prodNums.add(line[0]);
+                    for(int i = 1; i < line.length; i++){
+                        if( (i == 2) || (i == 3)){
+                            temp.add(Integer.valueOf(line[i]));
+                        } else{
+                            temp.add(line[i]);
+                        }
+                    }
+                    data.add(temp.toArray());
+                }
+                records.put("ProdNums", prodNums);
+                records.put("ColHeadings", headings);
+                records.put("Data", data);
+            }
             
+            
+            // serialize the records for output
+            result = Jsoner.serialize(records);
+            
+            /*  **** Code for Testing Output ****
+            System.out.println(result);
+            InputData input = new InputData();
+            System.out.println(input.getJsonString());
+                **** End of testing code **** */
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -95,8 +147,9 @@ public class Converter {
         String result = ""; // default return value; replace later!
         
         try {
-            
             // INSERT YOUR CODE HERE
+            // deserialize the jsonString data and place it into a container
+            JsonObject jsonStr = Jsoner.deserialize(jsonString, new JsonObject());
             
         }
         catch (Exception e) {
