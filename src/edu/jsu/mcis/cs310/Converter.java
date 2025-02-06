@@ -7,7 +7,7 @@ import com.opencsv.*;
 import java.io.StringReader;
 import java.util.List;
 import java.util.Iterator;
-import java.util.Arrays;
+import java.util.Map;
 import java.util.ArrayList;
 import java.io.StringWriter;
 
@@ -126,7 +126,7 @@ public class Converter {
             
             // serialize the records for output
             result = Jsoner.serialize(records);
-            
+            csvReader.close();
             /*  **** Code for Testing Output ****
             System.out.println(result);
             InputData input = new InputData();
@@ -148,8 +148,84 @@ public class Converter {
         
         try {
             // INSERT YOUR CODE HERE
+            // create a CSVWriter to compose the data for the CSV file
+            StringWriter writer = new StringWriter();
+            CSVWriter csvWriter = new CSVWriter(writer, ',', '"', '\\', "\n");
             // deserialize the jsonString data and place it into a container
             JsonObject jsonStr = Jsoner.deserialize(jsonString, new JsonObject());
+            // create data structures to store data from the jsonStr
+            ArrayList<String> headings = new ArrayList<>();
+            ArrayList<String> prodNums = new ArrayList<>();
+            ArrayList<Object> data = new ArrayList<>();
+            // pull data from jsonStr and place it into the appropriate data structures
+            /*// ** code that kind of works ** */
+            for(Map.Entry<String, Object> entry : jsonStr.entrySet()){
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if(value instanceof JsonArray){
+                   JsonArray array = (JsonArray) value;
+                   for(Object item : array){
+                       if (key.equals("ProdNums")){
+                           prodNums.add(item.toString());
+                       }
+                       else if (key.equals("ColHeadings")){
+                           headings.add(item.toString());
+                       }
+                       else if (key.equals("Data")){
+                           data.add(item);
+                       }
+                   }
+                }
+            }
+            // ** End of code that kind of works ** */
+            // convert data structures into string arrays for the csvWriter to use
+            String[] headingArray = new String[headings.size()];
+            for(int i = 0; i < headings.size(); i++){
+                headingArray[i] = headings.get(i);
+            }
+            String[] prodNumArray = new String[prodNums.size()];
+            for (int i = 0; i < prodNums.size(); i++){
+                prodNumArray[i] = prodNums.get(i);
+            }
+            // write the headings to our csvWriter
+            csvWriter.writeNext(headingArray);
+            // combine the prodNums with the correct data and write it to the csvWriter
+            for(int i = 0; i < prodNumArray.length; i++){
+                String[] tempArray = new String[headingArray.length];
+                JsonArray dataVals = (JsonArray) data.get(i);
+                tempArray[0] = prodNumArray[i];
+                // split the lists in the data Arraylists into their individual parts to be paired with prodNums
+                for(int j = 0; j < dataVals.size(); j++){
+                    Object tempObj = dataVals.get(j);
+                    // determine if the current data entry location is the episode number
+                    if (j == 2){
+                        Number tempNum = dataVals.getBigDecimal(j);
+                        // adjust format for the episode number
+                        if (tempNum.intValue() < 10){
+                            tempArray[j+1] = "0" + tempObj.toString();
+                        }
+                        else{
+                            tempArray[j+1] = tempObj.toString();
+                        }
+                    } 
+                    else{
+                        tempArray[j+1] = tempObj.toString();
+                    }
+                }
+                csvWriter.writeNext(tempArray);
+            }
+            // convert the writer to a string for output
+            csvWriter.close();
+            result = writer.toString();
+            /* // ***** Code for testing output *****
+            for(String s : headingArray){
+                System.out.print(s + " ");
+            }
+            System.out.println();
+            for(int i = 0; i < prodNumArray.length; i++){
+                System.out.println(prodNumArray[i] + data.toArray()[i].toString());
+            }
+            // ***** End of Output Test ***** */
             
         }
         catch (Exception e) {
